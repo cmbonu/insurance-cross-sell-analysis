@@ -2,15 +2,7 @@
 # To add a new markdown cell, type '# %% [markdown]'
 import pandas as pd
 
-tdata = pd.read_csv('train.csv')
-tdata['Response'] = tdata['Response'].apply(lambda x : 'Y' if x==1 else 'N')
-
-age_breaks = [20.0, 32.0, 46.0, 60.0, 85.0]
-premium_breaks = [2630.0, 15955.0, 36292.0, 57361.0, 540165.0]
-tdata['age_group'] = pd.cut(tdata['Age'],bins=age_breaks,labels=['age_1', 'age_2','age_3','age_4'],include_lowest=True)
-tdata['premium_group'] = pd.cut(tdata['Annual_Premium'],bins=premium_breaks,labels=['prem_1', 'prem_2','prem_3','prem_4'],include_lowest=True)
-
-response_value = tdata['Response'].unique()
+ATTR_DEPTH = 5
 
 def build_group_summary(source_df, summary_cols, identity_col,target_col,target_values,fnum):
     aggregate_columns = [identity_col]
@@ -46,18 +38,28 @@ def build_group_summary(source_df, summary_cols, identity_col,target_col,target_
     #return group_summary, group_summary_extd[return_columns]
     #return group_summary.pivot(index=summary_cols,values=identity_col,columns=target_col)
 
+from itertools import combinations
+import multiprocessing
+
+tdata = pd.read_csv('train.csv')
+tdata['Response'] = tdata['Response'].apply(lambda x : 'Y' if x==1 else 'N')
+
+age_breaks = [20.0, 32.0, 46.0, 60.0, 85.0]
+premium_breaks = [2630.0, 15955.0, 36292.0, 57361.0, 540165.0]
+tdata['age_group'] = pd.cut(tdata['Age'],bins=age_breaks,labels=['age_1', 'age_2','age_3','age_4'],include_lowest=True)
+tdata['premium_group'] = pd.cut(tdata['Annual_Premium'],bins=premium_breaks,labels=['prem_1', 'prem_2','prem_3','prem_4'],include_lowest=True)
+
+response_value = tdata['Response'].unique()
 rdcols = ['Gender','Driving_License', 'Region_Code','Previously_Insured', 'Vehicle_Age', 'Vehicle_Damage','Policy_Sales_Channel', 'Vintage','premium_group','age_group']
 
-from itertools import combinations
-
-col_list = []
-for i in range(1,5):
-    for cols in combinations(rdcols,i):
-        rcols = list(cols)
-        col_list.append(rcols)
-print(len(col_list))
-import multiprocessing
 if __name__ == '__main__':
+
+    col_list = []
+    for i in range(1,ATTR_DEPTH+1):
+        for cols in combinations(rdcols,i):
+            rcols = list(cols)
+            col_list.append(rcols)
+
     processes = []
     for i,col_grp in enumerate(col_list):
         p = multiprocessing.Process(target=build_group_summary, args=(tdata,col_grp,'id','Response',response_value,i,))
