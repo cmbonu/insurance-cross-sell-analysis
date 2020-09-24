@@ -1,0 +1,7 @@
+results
+catboost_info
+mlruns
+.ipynb_checkpoints
+*.csv
+*.log
+*.zip
